@@ -1,7 +1,7 @@
 #!/bin/bash
 try(){
-    input="$1"
-    expected="$2"
+    expected="$1"
+    input="$2"
 
     ./ccmsck "$input" > tmp.s
     gcc -o tmp tmp.s
@@ -15,8 +15,10 @@ try(){
         exit 1
     fi
 }
-
-try 32+8 40
-try 42+8-9 41
-
+try 0 0
+try 42 42
+try 40 32+8
+try 41 42+8-9
+try 41 " 12 + 34 - 5 "
+try 72 " 5+ 8 + 68 -9"
 echo OK
