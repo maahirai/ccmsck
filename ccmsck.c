@@ -11,13 +11,28 @@ typedef enum {
     TK_EOF,//終端文字
 } TokenKind;
 
-typedef struct Token Token;
+typedef enum {
+    ND_ADD, // +
+    ND_SUB, // -
+    ND_MUL, // *
+    ND_DIV, // /
+    ND_NUM, // 整数
+} NodeKind;
 
+typedef struct Token Token;
 struct Token{
     TokenKind kind;//トークンの型
     Token *next;//次のトークンへのポインタ
     int value;//TK_NUMの場合の数値
     char *str;//入力文字列から生成されたトークン文字列
+};
+
+typedef struct Node Node;
+struct Node {
+    NodeKind kind; //ノードの型
+    Node *lhs;  //左辺に来るノード
+    Node *rhs;  //右辺に来るノード
+    int value; //kindがND_NUMの場合の数値
 };
 
 Token *token;
@@ -109,8 +124,64 @@ Token *tokenize(char *p){
     return top.next;
 }
 
+//抽象構文木のノードを生成します．(数値以外)
+Node *new_node(NodeKind kind,Token *lhs,Token *rhs){
+    Node *node = calloc(1,sizeof(node));
+    node->kind = kind;
+    node->lhs = lhs;
+    node->rhs = rhs;
+    return node;
+}
+
+//数値のノードを生成し,トークンを読み進めます．
+Node *new_node_num(int value){
+    Node *node_num = calloc(1,sizeof(Node));
+    node_num->kind = ND_NUM;
+    node_num->value = value;
+    return node_num;
+}
+
+Node* expr(){
+    Node *node = mul();
 
 
+    for(; ;){
+        if(consume('+')){
+            node = add_node(ND_ADD,node,mul());
+            continue;
+        }
+        if(consume('-')){
+            node = add_node(ND_SUB,node,mul());
+            continue;
+        }
+        return node;
+    }
+}
+
+Node* mul(){
+    Node *node = primary();
+
+    for(; ;){
+        if(consume('*')){
+            node = add_node(ND_MUL,node,primary());
+        }
+        else if(consume('/')){
+            node = add_node(ND_DIV,node,primary());
+        }
+        else
+            return node;
+    }
+}
+
+Node *primary(){
+    if(consume('(')){
+        Node *node = expr();
+        expect(')');
+        return node;
+    }
+
+    return new_node_num(expect_number());
+}
 
 int main(int argc, char **argv) {
     user_input = argv[1];
