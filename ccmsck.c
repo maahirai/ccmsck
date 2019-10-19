@@ -111,7 +111,7 @@ Token *tokenize(char *p){
             continue;
         }
 
-        if(*p == '+'||*p == '-'){
+        if(strchr("+-*/()",*p)){
            cur = new_token(TK_RESERVED,cur,p++);
            continue;
         }
@@ -187,36 +187,57 @@ Node *primary(){
     return new_node_num(expect_number());
 }
 
+void gen(Node *node){
+    if(node->kind == ND_NUM){
+        printf("    push %d\n",node->value);
+        return;
+    }
+
+    gen(node->lhs);
+    gen(node->rhs);
+
+    printf("    pop rdi\n");
+    printf("    pop rax\n");
+
+    //元バージョンはswitch文
+    if(node->kind == ND_ADD){
+        printf("    add rax, rdi\n");
+    }
+    else if(node->kind == ND_SUB){
+        printf("    sub rax, rdi\n");
+    }
+    else if(node->kind == ND_MUL){
+        printf("    imul rax, rdi\n");
+    }
+    else if(node->kind == ND_DIV){
+        printf("    cqo\n");
+        printf("    idiv rdi\n");
+    }
+
+    printf("    push rax\n");
+}
+
 int main(int argc, char **argv) {
-    user_input = argv[1];
     if (argc != 2) {
         fprintf(stderr, "引数の個数が正しくありません\n");
         return 1;
     }
 
+    user_input = argv[1];
     //トークナイズする
-    token = tokenize(argv[1]);
+    token = tokenize(user_input);
+    //パースして抽象構文木を生成する．
+    Node *node = expr();
 
     printf(".intel_syntax noprefix\n");
     printf(".global main\n");
     printf("main:\n");
 
-    //式の最初は数でなければならないため，それをチェックして
-    //最初のmov命令を出力
-    printf("  mov rax, %d\n", expect_number());
+    //抽象構文木からアセンブリを生成する.
+    gen(node);
 
-    //終端文字を見つけるまで記号トークンと数値のセットを
-    //取得し続け,それに対応したアセンブリを出力．
-    while(!at_eof()){
-        if(consume('+')){
-            printf("  add rax, %d\n", expect_number());
-            continue;
-        }
-
-        expect('-');
-        printf("  sub rax, %d\n", expect_number());
-    }
-
-    printf("  ret\n");
+    //スタックトップの値を取り出して返り値とする.
+    printf("    pop rax\n");
+    printf("    ret\n");
     return 0;
 }
