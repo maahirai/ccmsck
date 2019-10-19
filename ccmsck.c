@@ -35,6 +35,11 @@ struct Node {
     int value; //kindがND_NUMの場合の数値
 };
 
+//プロトタイプ宣言
+Node* expr();
+Node* mul();
+Node *primary();
+
 Token *token;
 
 //エラーが起きたことを知らせる関数
@@ -125,8 +130,8 @@ Token *tokenize(char *p){
 }
 
 //抽象構文木のノードを生成します．(数値以外)
-Node *new_node(NodeKind kind,Token *lhs,Token *rhs){
-    Node *node = calloc(1,sizeof(node));
+Node *new_node(NodeKind kind,Node *lhs,Node *rhs){
+    Node *node = calloc(1,sizeof(Node));
     node->kind = kind;
     node->lhs = lhs;
     node->rhs = rhs;
@@ -147,14 +152,13 @@ Node* expr(){
 
     for(; ;){
         if(consume('+')){
-            node = add_node(ND_ADD,node,mul());
-            continue;
+            node = new_node(ND_ADD,node,mul());
         }
-        if(consume('-')){
-            node = add_node(ND_SUB,node,mul());
-            continue;
+        else if(consume('-')){
+            node = new_node(ND_SUB,node,mul());
         }
-        return node;
+        else
+            return node;
     }
 }
 
@@ -163,10 +167,10 @@ Node* mul(){
 
     for(; ;){
         if(consume('*')){
-            node = add_node(ND_MUL,node,primary());
+            node = new_node(ND_MUL,node,primary());
         }
         else if(consume('/')){
-            node = add_node(ND_DIV,node,primary());
+            node = new_node(ND_DIV,node,primary());
         }
         else
             return node;
