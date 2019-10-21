@@ -270,7 +270,6 @@ Node *add()
     }
 }
 
-
 //mul = unary ("*" unary | "/" unary)*
 Node *mul()
 {
@@ -290,6 +289,8 @@ Node *mul()
             return node;
     }
 }
+
+// unary = ("+"|"-")? primary
 Node *unary()
 {
     if (consume("+"))
@@ -303,6 +304,7 @@ Node *unary()
     return primary();
 }
 
+// primary = num | "(" expr ")"
 Node *primary()
 {
     if (consume("("))
