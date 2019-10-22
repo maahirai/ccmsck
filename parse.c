@@ -1,45 +1,4 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <ctype.h>
-#include <stdarg.h>
-#include <stdbool.h>
-#include <string.h>
-
-typedef enum
-{
-    TK_RESERVED, //記号
-    TK_NUM,      //整数トークン
-    TK_EOF,      //終端文字
-} TokenKind;
-
-typedef struct Token Token;
-struct Token
-{
-    TokenKind kind; //トークンの型
-    Token *next;    //次のトークンへのポインタ
-    int value;      //TK_NUMの場合の数値
-    char *str;      //入力文字列から生成されたトークン文字列
-    int len;        //トークンの長さ
-};
-
-Token *token;
-
-//エラーが起きたことを知らせる関数
-//printfと同じ引数
-char *user_input;
-void error_at(char *loc, char *fmt, ...)
-{
-    va_list ap;
-    va_start(ap, fmt);
-
-    int pos = loc - user_input;
-    fprintf(stderr, "%s\n", user_input);
-    fprintf(stderr, "%*s", pos, " ");
-    fprintf(stderr, "^ ");
-    vfprintf(stderr, fmt, ap);
-    fprintf(stderr, "\n");
-    exit(1);
-}
+#include"ccmsck.h"
 
 //次のトークンが引数と一致している場合はトークンを一つ読み進め，
 //真を返す．そうでない場合偽を返す．
@@ -51,7 +10,6 @@ bool consume(char *op)
     token = token->next;
     return true;
 }
-
 //次のトークンが引数と一致している場合はトークンを一つ読み進める．
 //そうでない場合はエラーを報告する．
 void expect(char *op)
@@ -61,7 +19,6 @@ void expect(char *op)
         error_at(token->str, "%sではありません．", op);
     token = token->next;
 }
-
 //次のトークンが数値の場合はトークンを一つ読み進めてその値を返す．
 //そうでない場合はエラーを報告する．
 int expect_number()
@@ -142,28 +99,6 @@ Token *tokenize(char *p)
     return top.next;
 }
 
-typedef enum
-{
-    ND_ADD, // +
-    ND_SUB, // -
-    ND_MUL, // *
-    ND_DIV, // /
-    ND_EQ,  // ==
-    ND_NE,  // !=
-    ND_LT,  // <
-    ND_LE,  // <=
-    ND_NUM, // 整数
-} NodeKind;
-
-typedef struct Node Node;
-struct Node
-{
-    NodeKind kind; //ノードの型
-    Node *lhs;     //左辺に来るノード
-    Node *rhs;     //右辺に来るノード
-    int value;     //kindがND_NUMの場合の数値
-};
-
 //ノードの生成
 Node *new_node(NodeKind kind){
     Node *node = calloc(1, sizeof(Node));
@@ -186,15 +121,6 @@ Node *new_num(int value)
     node->value = value;
     return node;
 }
-
-//プロトタイプ宣言
-Node *expr();
-Node *equality();
-Node *relational();
-Node *add();
-Node *mul();
-Node *unary();
-Node *primary();
 
 // expr = equality
 Node *expr()
@@ -315,87 +241,4 @@ Node *primary()
     }
 
     return new_num(expect_number());
-}
-
-void gen(Node *node)
-{
-    if (node->kind == ND_NUM)
-    {
-        printf("    push %d\n", node->value);
-        return;
-    }
-
-    gen(node->lhs);
-    gen(node->rhs);
-
-    printf("    pop rdi\n");
-    printf("    pop rax\n");
-
-    switch (node->kind)
-    {
-    case ND_ADD:
-        printf("    add rax, rdi\n");
-        break;
-    case ND_SUB:
-        printf("    sub rax, rdi\n");
-        break;
-    case ND_MUL:
-        printf("    imul rax, rdi\n");
-        break;
-    case ND_DIV:
-        printf("    cqo\n");
-        printf("    idiv rdi\n");
-        break;
-    case ND_EQ:
-        printf("    cmp rax, rdi\n");
-        printf("    sete al\n");
-        printf("    movzb rax, al\n");
-        break;
-    case ND_NE:
-        printf("    cmp rax, rdi\n");
-        printf("    setne al\n");
-        printf("    movzb rax, al\n");
-        break;
-    case ND_LT:
-        printf("    cmp rax, rdi\n");
-        printf("    setl al\n");
-        printf("    movzb rax, al\n");
-        break;
-    case ND_LE:
-        printf("    cmp rax, rdi\n");
-        printf("    setle al\n");
-        printf("    movzb rax, al\n");
-        break;
-    default:
-        break;
-    }
-
-    printf("    push rax\n");
-}
-
-int main(int argc, char **argv)
-{
-    if (argc != 2)
-    {
-        fprintf(stderr, "引数の個数が正しくありません\n");
-        return 1;
-    }
-
-    user_input = argv[1];
-    //トークナイズする
-    token = tokenize(user_input);
-    //パースして抽象構文木を生成する．
-    Node *node = expr();
-
-    printf(".intel_syntax noprefix\n");
-    printf(".global main\n");
-    printf("main:\n");
-
-    //抽象構文木からアセンブリを生成する.
-    gen(node);
-
-    //スタックトップの値を取り出して返り値とする.
-    printf("    pop rax\n");
-    printf("    ret\n");
-    return 0;
 }
