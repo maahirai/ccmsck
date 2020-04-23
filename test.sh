@@ -20,9 +20,9 @@ try 0 0
 try 42 42
 try 40 32+8
 try 41 42+8-9
-<<comment
 try 41 " 12 + 34 - 5 "
 try 72 " 5+ 8 + 68 -9"
+<<comment
 try 83 " 2 * 43 -7+4"
 try 4 "12*5/15"
 try 47 '5+6*7'
