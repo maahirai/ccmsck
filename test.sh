@@ -20,6 +20,7 @@ try 0 0
 try 42 42
 try 40 32+8
 try 41 42+8-9
+<<comment
 try 41 " 12 + 34 - 5 "
 try 72 " 5+ 8 + 68 -9"
 try 83 " 2 * 43 -7+4"
@@ -48,4 +49,5 @@ try 0 '1>2'
 try 1 '1>=0'
 try 1 '1>=1'
 try 0 '1>=2'
+comment
 echo OK

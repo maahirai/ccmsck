@@ -2,13 +2,10 @@ CFLAGS=-std=c11 -g -static
 SRCS=$(wildcard *.c)
 OBJS=$(SRCS:.c=.o)
 
-ccmsck: $(OBJS)
-			$(CC) -o ccmsck $(OBJS) $(LDFLAGS)
-
-$(OBJS): ccmsck.h
+ccmsck:	ccmsck.c
 
 test: ccmsck
-		./test.sh
+		./test.sh&&rm -f ccmsck *.o *~ tmp*
 
 clean:
 		rm -f ccmsck *.o *~ tmp*
