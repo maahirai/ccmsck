@@ -43,17 +43,33 @@ void error(char *fmt, ...){
   exit(1);
 }
 
+//入力されたプログラム
+char *user_input;
+
+void error_at(char *loc,char *fmt, ... ){
+  va_list ap;
+  va_start(ap, fmt);
+
+  int pos = loc - user_input;
+  fprintf(stderr, "%s\n",user_input);
+  fprintf(stderr, "%*s",pos," ");//pos個の空白を出力
+  fprintf(stderr,"^ ");
+  vfprintf(stderr,fmt, ap);
+  fprintf(stderr,"\n");
+  exit(1);
+}
+
 //次のトークンが期待している記号の時にはトークンをひとつ読み進め，真を返す．そうでないときは偽を返す．
 bool expect(char op){
   if(token->kind!=TK_RESERVED||token->str[0]!=op)
-    error("'%c'ではありません",op);
+    error(token->str,"'%c'ではありません",op);
   token=token->next;
 }
 
 //次のトークンが数値の場合，トークンを一つ読み進めてその数値を返す．そうで無い場合にはエラーを報告する．
 int expect_num(){
   if(token->kind!=TK_NUM)
-    error("数値ではありません");
+    error_at(token->str,"数値ではありません");
   int ret=token->val;
   token=token->next;
   return ret;
@@ -72,7 +88,8 @@ Token *new_token(TokenKind kind,Token *cur,char *str){
   return tok;
 }
 
-Token *tokenize(char *p){
+Token *tokenize(){
+  char *p=user_input;
   Token head;
   head.next=NULL;
   Token *cur=&head;
@@ -94,7 +111,7 @@ Token *tokenize(char *p){
       continue;
     }
 
-    error("こんな文字扱えまへん'%c'\n",*p);
+    error_at(p,"この文字は扱えません\n");
   }
   new_token(TK_EOF,cur,p);
   return head.next;
@@ -107,7 +124,8 @@ int main(int argc,char **argv){
         return 1;
     }
 
-  token=tokenize(argv[1]);
+  user_input=argv[1];
+  token=tokenize();
 
   printf(".intel_syntax noprefix\n");
   printf(".global main\n");
