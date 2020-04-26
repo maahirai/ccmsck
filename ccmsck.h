@@ -1,55 +1,66 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <ctype.h>
-#include <stdarg.h>
-#include <stdbool.h>
-#include <string.h>
+#include<stdio.h>
+#include<stdlib.h>
+#include<ctype.h>
+#include<stdarg.h>
+#include<stdbool.h>
+#include<string.h>
 
-//トークン
-typedef enum
-{
-    TK_RESERVED, //記号
-    TK_NUM,      //整数トークン
-    TK_EOF,      //終端文字
+/////////////型の宣言/////////////
+//トークンの種類
+typedef enum{
+  TK_RESERVED,//記号
+  TK_NUM,     //整数トークン
+  TK_EOF      //入力の終わりを表すトークン
 } TokenKind;
 
 typedef struct Token Token;
 struct Token
 {
-    TokenKind kind; //トークンの型
-    Token *next;    //次のトークンへのポインタ
-    int value;      //TK_NUMの場合の数値
-    char *str;      //入力文字列から生成されたトークン文字列
-    int len;        //トークンの長さ
+  TokenKind kind; //トークンの型
+  Token *next;  //次の入力トークン
+  int val;     //kindがTK_NUMの場合，その数値
+  char *str;   //トークン文字列
+  int len;     //トークンの長さ
 };
 
-//ノード
-typedef enum
-{
-    ND_ADD, // +
-    ND_SUB, // -
-    ND_MUL, // *
-    ND_DIV, // /
-    ND_EQ,  // ==
-    ND_NE,  // !=
-    ND_LT,  // <
-    ND_LE,  // <=
-    ND_NUM, // 整数
+typedef enum{
+  ND_ADD, // +
+  ND_SUB, // -
+  ND_MUL, // *
+  ND_DIV, // /
+  ND_EQ,  // ==
+  ND_NE,  // !=
+  ND_LT,  // <
+  ND_LE,  // <=
+  ND_NUM, // 整数
 } NodeKind;
 
 typedef struct Node Node;
-struct Node
-{
-    NodeKind kind; //ノードの型
-    Node *lhs;     //左辺に来るノード
-    Node *rhs;     //右辺に来るノード
-    int value;     //kindがND_NUMの場合の数値
+//抽象構文木のノードの型
+struct Node {
+  NodeKind kind;
+  Node *lhs;  //右辺
+  Node *rhs;  //左辺
+  int val;    //ND_NUMのとき使う
 };
 
-
-//プロトタイプ宣言
+/////////////プロトタイプ宣言/////////////
+//main.c
+//container.c
+void error_at(char *loc,char *fmt, ... );
+void error(char *fmt, ... );
+//codegen.c
+void gen(Node *node);
 //parse.c
+bool expect(char *op);
+int expect_num();
+bool consume(char *op);
+bool at_eof();
+bool startswith(char *p,char *q);
+Token *new_token(TokenKind kind,Token *cur,char *str,int len);
 Token *tokenize(char *p);
+Node *new_node(NodeKind kind, Node *lhs,Node *rhs);
+Node *new_node_num(int val);
 Node *expr();
 Node *equality();
 Node *relational();
@@ -57,11 +68,11 @@ Node *add();
 Node *mul();
 Node *unary();
 Node *primary();
-//codegen.c
-void gen(Node *node);
-//container.c
-void error_at(char *loc, char *fmt, ...);
 
-//グローバル変数
-extern Token *token;
+/////////////グローバル変数の宣言/////////////
+//main.c
 extern char *user_input;
+//container.c
+//codegen.c
+//parse.c
+extern Token *token;
