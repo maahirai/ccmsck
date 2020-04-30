@@ -2,7 +2,8 @@
 
 //次のトークンが期待している記号の時にはトークンをひとつ読み進め，真を返す．そうでないときは偽を返す．
 bool expect(char *op){
-  if(token->kind!=TK_RESERVED||strlen(op)!=token->len||memcmp(token->str,op,token->len))
+  if(token->kind!=TK_RESERVED||strlen(op)!=token->len
+    ||memcmp(token->str,op,token->len))
     error_at(token->str,"'%s'ではありません",op);
   token=token->next;
 }
@@ -18,11 +19,19 @@ int expect_num(){
 
 //トークンが期待している記号のとき読み進め,真を返す．そうで無い場合は偽を返す.
 bool consume(char *op){
-  if(token->kind!=TK_RESERVED||strlen(op)!=token->len||
-    memcmp(token->str,op,token->len))
+  if(token->kind!=TK_RESERVED
+    ||strlen(op)!=token->len||memcmp(token->str,op,token->len))
     return false;
   token=token->next;
   return true;
+}
+
+Token *consume_ident(){
+  if(token->kind!=TK_IDENT)
+    return NULL;
+  Token *ret=token;
+  token=token->next;
+  return ret;
 }
 
 bool at_eof(){
@@ -62,7 +71,7 @@ Token *tokenize(char *p){
         continue;
       }
 
-    if(strchr("+-*/()<>",*p)){
+    if(strchr("+-*/()<>;=",*p)){
       cur=new_token(TK_RESERVED,cur,p++,1);
       continue;
     }
@@ -75,6 +84,15 @@ Token *tokenize(char *p){
       continue;
     }
 
+    //variables
+    if(*p>='a'&&*p<='z'){
+      cur=new_token(TK_IDENT,cur,p,1);
+      cur->len=1;
+      cur->str=p;
+      p++;
+      continue;
+    }
+
     error_at(p,"この文字は扱えません\n");
   }
   new_token(TK_EOF,cur,p,0);
@@ -82,8 +100,6 @@ Token *tokenize(char *p){
 }
 
 //ここから抽象構文木
-
-
 Node *new_node(NodeKind kind, Node *lhs,Node *rhs){
   Node *node=(Node *)calloc(1,sizeof(Node));
   node->kind=kind;
@@ -99,10 +115,22 @@ Node *new_node_num(int val){
   return node;
 }
 
-
+Node *stmt(){
+  Node *node=expr();
+  expect(";");
+  return node;
+}
 
 Node *expr(){
-  return equality();
+  return assign();
+}
+
+Node *assign(){
+  Node *node=equality();
+
+  if(consume("="))
+    node=new_node(ND_ASSIGN,node,assign());
+  return node;
 }
 
 Node *equality(){
@@ -187,5 +215,22 @@ Node *primary(){
     expect(")"); //対応するカッコとじ
     return node;
   }
+
+  Token *tok=consume_ident();
+  if(tok){
+    Node *node=calloc(1,sizeof(Node));
+    node->kind=ND_LVAR;
+    node->offset=(tok->str[0]-'a'+1)*8;
+    return node;
+  }
   return new_node_num(expect_num());
+}
+
+Node *code[100];
+
+void program(){
+  int index=0;
+  while(!at_eof())
+    code[index++]=stmt();
+  code[index]=NULL;
 }
